@@ -1,12 +1,12 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Button,Form } from 'react-bootstrap';
 import './../App.css';
 import { Formik } from 'formik';
 import * as Yup from "yup";
-import {Nav, Navbar} from 'react-bootstrap';
+import {Nav, Navbar,Modal,Table} from 'react-bootstrap';
 import Cookies from 'universal-cookie';
 
-const cookie = new Cookies();
+const cookies = new Cookies();
 
 const Registro = () => {
         Yup.addMethod(Yup.mixed, 'methodName', function (anyArgsYouNeed) {
@@ -17,21 +17,24 @@ const Registro = () => {
                 return false
             });
         });
-    
+            const [show, setShow] = useState(false);
+          
+            const handleClose = () => setShow(false);
+            const handleShow = () => setShow(true);
+
         const schema = Yup.object().shape({
-            nombrecliente: Yup.string().required("Valor requerido"),
-            nombreempresa: Yup.string().required("Valor requerido"),
-            numempleados: Yup.number().min(1, "El valor debe ser mayor").required("El número de empleados es requerido"),
-            annoslaborando: Yup.number().min(1, "El valor debe ser mayor").required("El campo es requerido"),
+            nombre: Yup.string().required("Valor requerido"),
+            apellido: Yup.string().required("Valor requerido"),
+            fechanacimiento: Yup.date().min(1950, "El valor debe ser mayor o igual a 1950").max(2010, "El valor no debe ser mayor a 2010").required("El valor es requerido"),
             correo: Yup.string().email("Ingrese un correo valido").required("El correo es un valor requerido"),
-            contrasenna: Yup.string().required("Campo requerido").min(5, "Minimo 5 caracteres")
+            usuariogithub: Yup.string().required("Campo requerido")
         })
     
 
     return (
         <div>
              <Navbar bg="dark" variant="dark" sticky="top" >  
-                <Navbar.Brand href="/">RAS</Navbar.Brand>
+                <Navbar.Brand href="/">GitInnova</Navbar.Brand>
                 <Navbar.Toggle />
                 <Navbar.Collapse className="justify-content-end">
                     <Nav>
@@ -42,28 +45,26 @@ const Registro = () => {
             <Formik
                 validationSchema={schema}
                 onSubmit={async(values) => {
-                if(values.contrasenna==values.confirmar){
-                    let respuesta = await fetch ('https://api-poskdjxg1.vercel.app/cliente', { method: 'POST', body: JSON.stringify(values), headers: { 'Content-Type': 'application/json' } })
+                    let respuesta = await fetch(`https://api.github.com/users/yesikagomez`)
+                    let info = await respuesta.json()
+                    //fetch ('https://api.github.com/users/yesikagomez').then(response => response.json());
                     //let cliente = await respuesta.json()
-                    if (respuesta.status === 201) {
-                        cookie.set('nombrecliente', values.nombrecliente, {path:'/'});
-                        cookie.set('nombreempresa', values.nombreempresa, {path: "/"});
-                        cookie.set('numempleados', values.numempleados, {path:'/'});
-                        cookie.set('annoslaborando', values.annoslaborando, {path: "/"});
-                        cookie.set('correo', values.correo, {path:'/'});
-                        window.location.href="./Diagnostico";
+                   if (respuesta.status === 200) {
+                       alert(info.login);
+                       console.log(info);
+                        cookies.set('nombre', values.nombre, {path:'/'});
+                        cookies.set('apellido', values.apellido, {path: "/"});
+                        cookies.set('fechanacimiento', values.fechanacimiento, {path:'/'});
+                        cookies.set('correo', values.correo, {path: "/"});
+                        cookies.set('usuarigithub', values.usuariogithub, {path:'/'});
                     }
-                }else{
-                    alert("La contraseña debe ser igual");
-                }
                 }}
                 initialValues={{
-                    nombrecliente: " ",
-                    nombreempresa: " ",
-                    numempleados: 0,
-                    annoslaborando: 0,
-                    correo: " ",
-                    contrasenna:" ",
+                    nombre: " jesus",
+                    apellido: "resptre",
+                    fechanacimiento: "08/08/2009",
+                    correo: "yesika.go@hotmail.com",
+                    usuariogithub:"yesikagomez",
                 }}
             >
                 {props => {
@@ -79,63 +80,51 @@ const Registro = () => {
                         handleReset
                 } = props;
                 return <Form noValidate onSubmit={handleSubmit}>      
-            
-                <h2 className="m-3" >Registrese</h2>
-                    <Form.Group controlId="nombrecliente">
-                        <Form.Label>Nombre Completo</Form.Label>
+                <h2 className="m-3 text-center" >Registro de información del candidato</h2>
+                    <Form.Group controlId="nombre">
+                        <Form.Label>Nombre</Form.Label>
                         <Form.Control 
                             type="text" 
-                            name="nombrecliente" 
-                            placeholder="Ingrese su nombre completo" 
+                            name="nombre" 
+                            placeholder="Ingrese nombre" 
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            isValid={touched.nombrecliente && !errors.nombrecliente}
-                            isInvalid={!!errors.nombrecliente}
+                            value={values.nombre}
+                            isValid={touched.nombre && !errors.nombre}
+                            isInvalid={!!errors.nombre}
                         />
                         <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
-                        <Form.Control.Feedback type="invalid">{errors.nombrecliente}</Form.Control.Feedback>
+                        <Form.Control.Feedback type="invalid">{errors.nombre}</Form.Control.Feedback>
                     </Form.Group>
-                    <Form.Group controlId="nombreempresa">
-                        <Form.Label>Nombre Empresa</Form.Label>
+                    <Form.Group controlId="apellido">
+                        <Form.Label>Apellido</Form.Label>
                         <Form.Control
                             type="text" 
-                            placeholder="Ingrese el nombre de su empresa"
-                            name="nombreempresa"
+                            placeholder="Ingrese apellido"
+                            name="apellido"
+                            value={values.apellido}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            isValid={touched.nombreempresa && !errors.nombreempresa}
-                            isInvalid={!!errors.nombreempresa}
+                            isValid={touched.apellido && !errors.apellido}
+                            isInvalid={!!errors.apellido}
                             />
                             <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
-                            <Form.Control.Feedback type="invalid">{errors.nombreempresa}</Form.Control.Feedback>
+                            <Form.Control.Feedback type="invalid">{errors.apellido}</Form.Control.Feedback>
                     </Form.Group>
-                    <Form.Group controlId="numempleados">
-                        <Form.Label>Número de empleados</Form.Label>
+                    <Form.Group controlId="fechanacimiento">
+                        <Form.Label>Fechanacimiento</Form.Label>
                         <Form.Control
-                            type="number" 
-                            placeholder="Ingrese número de empleados" 
-                            name="numempleados"
+                            type="date" 
+                            placeholder="Ingrese fechanacimiento" 
+                            name="fechanacimiento"
                             onChange={handleChange}
+                            value={values.fechanacimiento}
                             onBlur={handleBlur}
-                            isValid={touched.numempleados && !errors.numempleados}
-                            isInvalid={!!errors.numempleados}
+                            isValid={touched.fechanacimiento && !errors.fechanacimiento}
+                            isInvalid={!!errors.fechanacimiento}
                             />
                             <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
-                            <Form.Control.Feedback type="invalid">{errors.numempleados}</Form.Control.Feedback>
-                    </Form.Group>
-                    <Form.Group controlId="annoslaborando">
-                        <Form.Label>Años Laborando</Form.Label>
-                        <Form.Control 
-                            type="number" 
-                            placeholder="Ingrese cuantos años lleva en funcionamiento la empresa" 
-                            name="annoslaborando"
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            isValid={touched.annoslaborando && !errors.annoslaborando}
-                            isInvalid={!!errors.annoslaborando}         
-                        />
-                        <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
-                        <Form.Control.Feedback type="invalid">{errors.annoslaborando}</Form.Control.Feedback>
+                            <Form.Control.Feedback type="invalid">{errors.fechanacimiento}</Form.Control.Feedback>
                     </Form.Group>
                     <Form.Group controlId="correo">
                         <Form.Label>Correo Electronico</Form.Label>
@@ -143,6 +132,7 @@ const Registro = () => {
                             type="email" 
                             placeholder="Ingrese su correo electronico" 
                             name="correo"
+                            value={values.correo}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             isValid={touched.correo && !errors.correo}
@@ -151,41 +141,81 @@ const Registro = () => {
                         <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
                         <Form.Control.Feedback type="invalid">{errors.correo}</Form.Control.Feedback>
                     </Form.Group>
-                    <Form.Group controlId="contrasenna">
-                        <Form.Label>Contraseña</Form.Label>
+                    <Form.Group controlId="usuariogithub">
+                        <Form.Label>Usuario Github</Form.Label>
                         <Form.Control 
-                            type="password" 
-                            placeholder="Contraseña" 
-                            name="contrasenna"
+                            type="text" 
+                            placeholder="Ingrese usuario de github" 
+                            name="usuariogithub"
                             onChange={handleChange}
+                            value={values.usuariogithub}
                             onBlur={handleBlur}
-                            isValid={touched.contrasenna && !errors.contrasenna}
-                            isInvalid={!!errors.contrasenna}         
+                            isValid={touched.usuariogithub && !errors.usuariogithub}
+                            isInvalid={!!errors.usuariogithub}         
                         />
                         <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
-                        <Form.Control.Feedback type="invalid">{errors.contrasenna}</Form.Control.Feedback>
-                    </Form.Group>
-                    <Form.Group controlId="confirmar">
-                        <Form.Label>Confirmar Contraseña</Form.Label>
-                        <Form.Control 
-                            type="password" 
-                            placeholder="Confirme contraseña" 
-                            name="confirmar"
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            isValid={touched.confirmar && !errors.confirmar}
-                            isInvalid={!!errors.confirmar}         
-                        />
-                        <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
-                        <Form.Control.Feedback type="invalid">{errors.confirmar}</Form.Control.Feedback>
+                        <Form.Control.Feedback type="invalid">{errors.usuariogithub}</Form.Control.Feedback>
                     </Form.Group>
                     <Button variant="primary" type="submit">
-                        Registrar
+                        Guardar
+                    </Button>
+                    <Button variant="primary" onClick={handleShow}>
+                        Launch demo modal
                     </Button>
                 </Form>
                 }}
             </Formik>
+            
+            <Modal 
+            show={show} onHide={handleClose} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Modal heading</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+        <Table striped bordered hover variant="dark">
+            <thead>
+                <tr>
+                <th>Nombre</th>
+                <th>Descripción.</th>
+                <th>Rama por Defecto</th>
+                <th>Lenguaje</th>
+                <th>Url Git</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <td>1</td>
+                <td>Mark</td>
+                <td>Otto</td>
+                <td>@mdo</td>
+                </tr>
+                <tr>
+                <td>2</td>
+                <td>Jacob</td>
+                <td>Thornton</td>
+                <td>@fat</td>
+                </tr>
+                <tr>
+                <td>3</td>
+                <td colSpan="2">Larry the Bird</td>
+                <td>@twitter</td>
+                <td>https://github.com/yesikagomez/GitInnova</td>
+                </tr>
+            </tbody>
+            
+</Table>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleClose}>
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
         </div>
+        
     )
 }
 
