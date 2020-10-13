@@ -2,12 +2,12 @@ import React, {Component} from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 import './App.css';
-import Registro from './components/FormularioRegistro';
+import InformacionCandidato from './components/InformacionCandidato';
 
 class App extends React.Component {
   render() {
     return(
-      <Registro/>
+      <InformacionCandidato/>
     )
   }
 }
