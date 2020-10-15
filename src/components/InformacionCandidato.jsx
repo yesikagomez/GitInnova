@@ -1,13 +1,27 @@
-import React, {useState} from 'react';
-import { Button,Form,Pagination } from 'react-bootstrap';
+import React, {useState,useEffect} from 'react';
+import { Button,Form } from 'react-bootstrap';
 import './../App.css';
 import { Formik } from 'formik';
 import Swal from 'sweetalert2';
 import * as Yup from "yup";
-import {Nav, Navbar,Modal,Table} from 'react-bootstrap';
+import {Modal} from 'react-bootstrap';
 import Cookies from 'universal-cookie';
+import MaterialTable from "material-table";
+import axios from 'axios';
+import BarInfo from './BarInfo';
+import './../index.css';
 
 const cookies = new Cookies();
+
+const columns= [
+    { title: 'Nombre', field: 'name' },
+    { title: 'Descripción', field: 'description' },
+    { title: 'Rama', field: 'default_branch' },
+    { title: 'Lenguaje', field: 'language'},
+    { title: 'Url Git', field: 'html_url', type: 'link'}
+  ];
+
+  let info ;
 
 const InformacionCandidato = () => {
     
@@ -20,7 +34,8 @@ const InformacionCandidato = () => {
             });
         });
             const [show, setShow] = useState(false);
-            const [repos,consultar]=useState([]);
+            const [usuario, getusuario] = useState([]);
+            const [data, setData]= useState([]);
             const handleClose = () => setShow(false);
             const handleShow = () => setShow(true);
 
@@ -30,43 +45,33 @@ const InformacionCandidato = () => {
             fechanacimiento: Yup.date().min(1950, "El valor debe ser mayor o igual a 1950").max(2010, "El valor no debe ser mayor a 2010").required("El valor es requerido"),
             correo: Yup.string().email("Ingrese un correo valido").required("El correo es un valor requerido"),
             usuariogithub: Yup.string().required("Campo requerido"),
-            cedula: Yup.string().required("Campo requerido").min(5, "Minimo 5 caracteres")
+            cedula: Yup.string().required("Campo requerido").min(5, "Minimo 5 caracteres").min(0, "El valor debe ser positivo")
         })
-    
-        async function abrirmodal (usuariogithub){
-           let respuesta =  await fetch(`https://api.github.com/users/${usuariogithub}/repos`)
-           let info =  await respuesta.json()
-           consultar(info);
-           if (respuesta.status === 200) {
-                handleShow();
-           }
-        }
-        let active = 2;
-        let items = [];
-        for (let number = 1; number <= 5; number++) {
-        items.push(
-            <Pagination.Item key={number} active={number === active}>
-            {number}
-            </Pagination.Item>,
-        );
-        }
 
+        async function  peticionGet (usuariogithub){
+            await axios.get(`https://api.github.com/users/${usuariogithub}/repos`)
+            .then(response=>{
+             setData(response.data);
+             if (response.status === 200) {
+                handleShow();
+           }else{
+            Swal.fire({
+                icon: 'error',
+                text: 'No se pudieron obtener datos'
+              })
+           }
+            }).catch(error=>{
+              console.log(error);
+            })
+          }
     return (
         <div>
-             <Navbar bg="dark" variant="dark" sticky="top" >  
-                <Navbar.Brand href="/">GitInnova</Navbar.Brand>
-                <Navbar.Toggle />
-                <Navbar.Collapse className="justify-content-end">
-                    <Nav>
-                        <Navbar.Brand>Maria</Navbar.Brand>
-                    </Nav>
-                </Navbar.Collapse>
-            </Navbar>
+             <BarInfo nombrecliente={usuario.name} correo={cookies.get('correo')}/>
             <Formik
                 validationSchema={schema}
                 onSubmit={async(values) => {
                     let respuesta = await fetch(`https://api.github.com/users/${values.usuariogithub}`)
-                    let info = await respuesta.json()
+                    info = await respuesta.json()
                    if (respuesta.status === 200) {
                         cookies.set('nombre', values.nombre, {path:'/'});
                         cookies.set('apellido', values.apellido, {path: "/"});
@@ -74,6 +79,8 @@ const InformacionCandidato = () => {
                         cookies.set('fechanacimiento', values.fechanacimiento, {path:'/'});
                         cookies.set('correo', values.correo, {path: "/"});
                         cookies.set('usuarigithub', values.usuariogithub, {path:'/'});
+                        getusuario(info);
+                        document.getElementById('ver').style.display = "inline";
                     }else{
                         Swal.fire({
                             icon: 'error',
@@ -81,13 +88,14 @@ const InformacionCandidato = () => {
                           })
                     }
                 }}
+                
                 initialValues={{
-                    nombre: " jesus",
-                    apellido: "resptre",
-                    cedula: "12345",
-                    fechanacimiento: "08/08/2009",
-                    correo: "yesika.go@hotmail.com",
-                    usuariogithub:"yesikagomez",
+                    nombre: " ",
+                    apellido: "",
+                    cedula: "",
+                    fechanacimiento: "",
+                    correo: "",
+                    usuariogithub:"",
                 }}
             >
                 {props => {
@@ -95,12 +103,9 @@ const InformacionCandidato = () => {
                         values,
                         touched,
                         errors,
-                        dirty,
-                        isSubmitting,
                         handleChange,
                         handleBlur,
-                        handleSubmit,
-                        data
+                        handleSubmit
                 } = props;
                 return <Form noValidate onSubmit={handleSubmit}>      
                 <h2 className="m-3 text-center" >Registro de información del candidato</h2>
@@ -112,7 +117,6 @@ const InformacionCandidato = () => {
                             placeholder="Ingrese nombre" 
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            value={values.nombre}
                             isValid={touched.nombre && !errors.nombre}
                             isInvalid={!!errors.nombre}
                         />
@@ -125,7 +129,6 @@ const InformacionCandidato = () => {
                             type="text" 
                             placeholder="Ingrese apellido"
                             name="apellido"
-                            value={values.apellido}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             isValid={touched.apellido && !errors.apellido}
@@ -138,9 +141,8 @@ const InformacionCandidato = () => {
                         <Form.Label>Cedula</Form.Label>
                         <Form.Control
                             type="number" 
-                            placeholder="Ingrese apellido"
+                            placeholder="Ingrese cedula"
                             name="cedula"
-                            value={values.cedula}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             isValid={touched.cedula && !errors.cedula}
@@ -156,7 +158,6 @@ const InformacionCandidato = () => {
                             placeholder="Ingrese fechanacimiento" 
                             name="fechanacimiento"
                             onChange={handleChange}
-                            value={values.fechanacimiento}
                             onBlur={handleBlur}
                             isValid={touched.fechanacimiento && !errors.fechanacimiento}
                             isInvalid={!!errors.fechanacimiento}
@@ -170,7 +171,6 @@ const InformacionCandidato = () => {
                             type="email" 
                             placeholder="Ingrese su correo electronico" 
                             name="correo"
-                            value={values.correo}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             isValid={touched.correo && !errors.correo}
@@ -186,7 +186,6 @@ const InformacionCandidato = () => {
                             placeholder="Ingrese usuario de github" 
                             name="usuariogithub"
                             onChange={handleChange}
-                            value={values.usuariogithub}
                             onBlur={handleBlur}
                             isValid={touched.usuariogithub && !errors.usuariogithub}
                             isInvalid={!!errors.usuariogithub}         
@@ -194,56 +193,43 @@ const InformacionCandidato = () => {
                         <Form.Control.Feedback>Campo valido!</Form.Control.Feedback>
                         <Form.Control.Feedback type="invalid">{errors.usuariogithub}</Form.Control.Feedback>
                     </Form.Group>
-                    <Button variant="primary" type="submit">
-                        Guardar
-                    </Button>
-                    <Button variant="primary" onClick={()=>abrirmodal(values.usuariogithub)}>
-                        Ver Repositorios
-                    </Button>
+                    <div className="text-center">
+                            <Button  variant="dark" type="submit">
+                                Guardar
+                            </Button>
+                        <div  id="ver" className="ver">
+                            <Button className="m-3" variant="dark" type="submit" onClick={()=>peticionGet(values.usuariogithub)}>
+                                Ver Repositorios
+                            </Button>
+                        </div>
+                    </div>
                 </Form>
                 }}
             </Formik>
-            
             <Modal 
                 show={show} onHide={handleClose} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Modal heading</Modal.Title>
+                <Modal.Title>Repositorios de {usuario.name}</Modal.Title>
+                    <img src={usuario.avatar_url} id="imagen" className="rounded-circle"></img>
                 </Modal.Header>
                 <Modal.Body>
-               
-                    <Table striped bordered hover variant="dark" className="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                            <th>Nombre</th>
-                            <th>Descripción</th>
-                            <th>Rama por Defecto</th>
-                            <th>Lenguaje</th>
-                            <th>Url Git</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {
-                        repos.map(item => {
-                            return (
-                            <tr key={item.id}>
-                                <td>{item.name}</td>
-                                <td>{item.description}</td>
-                                <td>{item.default_branch}</td>
-                                <td>{item.language}</td>
-                                <td><a href={item.html_url} target="_blank">{item.html_url}</a></td>
-                            </tr>)
-                        })
-                        }
-                        </tbody>
-                    </Table>
-                    <Pagination>{items}</Pagination>
+                <MaterialTable
+                    columns={columns}
+                    data={data}
+                    title= {usuario.login}
+                    options={{
+                        headerStyle: {
+                            backgroundColor: '#000000',
+                            color: '#FFF',
+                            searchFieldStyle:'#3544321'
+                          },
+                        actionsColumnIndex: -1,
+                    }}
+                />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
-                    <Button variant="primary" onClick={handleClose}>
-                        Save Changes
+                        cerrar
                     </Button>
                 </Modal.Footer>
             </Modal>
